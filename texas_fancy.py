@@ -11,8 +11,13 @@ import urllib.request
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
-
 store_name_to_distance = {}
+
+Manufacturers = {
+  "M": "Moderna",
+  "J": "Johnson",
+  "P": "Pfizer"
+}
 
 
 def open_appointments(namespace, geolocator):
@@ -39,6 +44,9 @@ def open_appointments(namespace, geolocator):
             if distance.miles > namespace.distance:
                 continue
         if location['openTimeslots'] > 0:
+            if namespace.type is not None:
+                if Manufacturers.get(namespace.type).lower() == location['manufacturer'].lower():
+                    continue
             contents = urllib.request.urlopen(location['url']).read().decode('utf-8')
             if 'Appointments are no longer available for this location' not in contents:
                 webbrowser.open(location['url'])
@@ -57,6 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--distance', type=float,
                         help='Maximum distance (in miles) from home (requires home)')
     parser.add_argument('-Z', '--zipcodes', nargs='+', help='Zipcodes to restrict the search to')
+    parser.add_argument('-T', '--type', type=str, help='Type of vaccine to limit search to: M = Moderna, J = J&J, P = Pfizer')
 
     ns = parser.parse_args(sys.argv[1:])
 
@@ -70,6 +79,8 @@ if __name__ == '__main__':
         home = geolocator.geocode(ns.home)
         ns.latlong = (home.latitude, home.longitude)
         print(f'Looking for appointments {ns.distance} miles from {home}')
+    if ns.type:
+        print(f'Limiting to {ns.type} vaccine manufacturer')
     with tqdm() as pbar:
         while not open_appointments(ns, geolocator):
             sleep(1)
