@@ -45,7 +45,11 @@ def open_appointments(namespace, geolocator):
                 continue
         if location['openTimeslots'] > 0:
             if namespace.type is not None:
-                if Manufacturers.get(namespace.type).lower() == location['manufacturer'].lower():
+                manufpresent = False
+                for slot in location['slotDetails']:
+                    if Manufacturers.get(namespace.type).lower() == slot['manufacturer'].lower():
+                        manufpresent = True
+                if not manufpresent:
                     continue
             contents = urllib.request.urlopen(location['url']).read().decode('utf-8')
             if 'Appointments are no longer available for this location' not in contents:
